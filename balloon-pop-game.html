@@ -38,6 +38,46 @@
             width: 100%;
             height: 100%;
             cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-10px, -5px) rotate(-2deg); }
+            20% { transform: translate(10px, 5px) rotate(2deg); }
+            30% { transform: translate(-10px, 5px) rotate(-2deg); }
+            40% { transform: translate(10px, -5px) rotate(2deg); }
+            50% { transform: translate(-10px, -5px) rotate(-2deg); }
+            60% { transform: translate(10px, 5px) rotate(2deg); }
+            70% { transform: translate(-10px, 5px) rotate(-2deg); }
+            80% { transform: translate(10px, -5px) rotate(2deg); }
+            90% { transform: translate(-10px, -5px) rotate(-2deg); }
+        }
+
+        #gameContainer.shake {
+            animation: shake 0.5s;
+        }
+
+        #flashOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 25;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        #flashOverlay.flash {
+            animation: flash 0.3s;
         }
 
         #ui {
@@ -162,7 +202,7 @@
     <div id="gameContainer">
         <div id="startScreen">
             <h1>🎈 Balloon Pop 🎈</h1>
-            <p>Tap the balloons before they escape!<br>Don't let 5 balloons get away!</p>
+            <p>Tap the balloons before they escape!<br>⚠️ AVOID the bomb balloons! 💣<br>Don't let 5 balloons get away!</p>
             <button id="startBtn">Start Game</button>
         </div>
 
@@ -172,6 +212,8 @@
             <div id="score">Score: 0</div>
             <div id="lives">❤️ 5</div>
         </div>
+
+        <div id="flashOverlay"></div>
 
         <div id="gameOver">
             <h1>Game Over!</h1>
@@ -183,6 +225,8 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('gameContainer');
+        const flashOverlay = document.getElementById('flashOverlay');
         const scoreEl = document.getElementById('score');
         const livesEl = document.getElementById('lives');
         const gameOverEl = document.getElementById('gameOver');
@@ -222,6 +266,11 @@
                 this.swayOffset = Math.random() * Math.PI * 2;
                 this.swaySpeed = 0.02 + Math.random() * 0.02;
                 this.popped = false;
+                // 25% chance of having a bomb
+                this.hasBomb = Math.random() < 0.25;
+                if (this.hasBomb) {
+                    this.color = '#2d3436'; // Dark color for bomb balloons
+                }
             }
 
             update(deltaTime) {
@@ -250,6 +299,42 @@
                 ctx.moveTo(this.x, this.y + this.radius);
                 ctx.lineTo(this.x, this.y + this.radius + 40);
                 ctx.stroke();
+
+                // Draw bomb if this balloon has one
+                if (this.hasBomb) {
+                    const bombY = this.y + this.radius + 20;
+
+                    // Bomb body
+                    ctx.beginPath();
+                    ctx.fillStyle = '#000';
+                    ctx.arc(this.x, bombY, 12, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Bomb highlight
+                    ctx.beginPath();
+                    ctx.fillStyle = '#555';
+                    ctx.arc(this.x - 4, bombY - 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Fuse
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#8B4513';
+                    ctx.lineWidth = 3;
+                    ctx.moveTo(this.x, bombY - 12);
+                    ctx.lineTo(this.x - 5, bombY - 20);
+                    ctx.stroke();
+
+                    // Spark/flame at fuse tip
+                    ctx.beginPath();
+                    ctx.fillStyle = '#ff6b00';
+                    ctx.arc(this.x - 5, bombY - 20, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.fillStyle = '#ffed00';
+                    ctx.arc(this.x - 5, bombY - 20, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
 
             isOffScreen() {
@@ -305,6 +390,35 @@
             }
         }
 
+        // Create explosion effect for bombs
+        function createExplosionEffect(x, y) {
+            // Create many more particles for explosion
+            for (let i = 0; i < 60; i++) {
+                const particle = new Particle(x, y, ['#ff6b00', '#ffed00', '#ff0000', '#ff8c00'][Math.floor(Math.random() * 4)]);
+                // Make explosion particles faster and larger
+                particle.vx *= 2;
+                particle.vy *= 2;
+                particle.radius *= 1.5;
+                particles.push(particle);
+            }
+        }
+
+        // Trigger screen shake
+        function shakeScreen() {
+            gameContainer.classList.add('shake');
+            setTimeout(() => {
+                gameContainer.classList.remove('shake');
+            }, 500);
+        }
+
+        // Trigger flash effect
+        function flashScreen() {
+            flashOverlay.classList.add('flash');
+            setTimeout(() => {
+                flashOverlay.classList.remove('flash');
+            }, 300);
+        }
+
         // Handle touch/click
         function handlePointerDown(e) {
             if (!gameRunning) return;
@@ -316,14 +430,31 @@
             // Check if any balloon was tapped
             for (let i = balloons.length - 1; i >= 0; i--) {
                 if (balloons[i].contains(x, y)) {
-                    createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
-                    balloons.splice(i, 1);
-                    score += 10;
-                    scoreEl.textContent = `Score: ${score}`;
+                    if (balloons[i].hasBomb) {
+                        // BOOM! Clicked a bomb balloon
+                        createExplosionEffect(balloons[i].x, balloons[i].y);
+                        shakeScreen();
+                        flashScreen();
+                        balloons.splice(i, 1);
 
-                    // Play pop sound (visual feedback)
-                    canvas.style.transform = 'scale(0.98)';
-                    setTimeout(() => canvas.style.transform = 'scale(1)', 100);
+                        // Lose a life
+                        lives--;
+                        livesEl.textContent = `❤️ ${lives}`;
+
+                        if (lives <= 0) {
+                            endGame();
+                        }
+                    } else {
+                        // Normal balloon pop
+                        createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
+                        balloons.splice(i, 1);
+                        score += 10;
+                        scoreEl.textContent = `Score: ${score}`;
+
+                        // Play pop sound (visual feedback)
+                        canvas.style.transform = 'scale(0.98)';
+                        setTimeout(() => canvas.style.transform = 'scale(1)', 100);
+                    }
 
                     break;
                 }
