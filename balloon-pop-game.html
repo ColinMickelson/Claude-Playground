@@ -85,25 +85,54 @@
             top: 0;
             left: 0;
             right: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 15px;
             color: white;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             z-index: 10;
         }
 
-        #score, #lives {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px 20px;
-            border-radius: 10px;
+        #topBar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
 
-        #gameOver {
+        #score, #lives, #level {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-size: 20px;
+        }
+
+        #statsBar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .stat.highlight {
+            background: rgba(255, 215, 0, 0.6);
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        #gameOver, #levelComplete {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -115,20 +144,33 @@
             text-align: center;
             display: none;
             z-index: 20;
+            max-width: 90%;
         }
 
-        #gameOver h1 {
+        #gameOver h1, #levelComplete h1 {
             font-size: 48px;
             margin-bottom: 20px;
             color: #ff6b6b;
         }
 
-        #gameOver p {
-            font-size: 24px;
-            margin-bottom: 30px;
+        #levelComplete h1 {
+            color: #4ecdc4;
         }
 
-        #restartBtn {
+        #gameOver p, #levelComplete p {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .achievement {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 2px solid gold;
+        }
+
+        #restartBtn, #nextLevelBtn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
@@ -141,8 +183,12 @@
             transition: transform 0.2s;
         }
 
-        #restartBtn:active {
+        #restartBtn:active, #nextLevelBtn:active {
             transform: scale(0.95);
+        }
+
+        #nextLevelBtn {
+            background: linear-gradient(135deg, #4ecdc4 0%, #45b7d1 100%);
         }
 
         #startScreen {
@@ -202,22 +248,35 @@
     <div id="gameContainer">
         <div id="startScreen">
             <h1>🎈 Balloon Pop 🎈</h1>
-            <p>Tap the balloons before they escape!<br>⚠️ AVOID the bomb balloons! 💣<br>Don't let 5 balloons get away!</p>
+            <p>Pop balloons before they escape!<br>⚠️ AVOID bomb balloons! 💣<br>⭐ Collect bonus stars! ⭐<br>Progress through 5 levels!</p>
             <button id="startBtn">Start Game</button>
         </div>
 
         <canvas id="gameCanvas"></canvas>
 
         <div id="ui">
-            <div id="score">Score: 0</div>
-            <div id="lives">❤️ 5</div>
+            <div id="topBar">
+                <div id="level">Level: 1</div>
+                <div id="score">Score: 0</div>
+                <div id="lives">❤️ 5</div>
+            </div>
+            <div id="statsBar">
+                <div class="stat" id="streak">🔥 Streak: 0</div>
+                <div class="stat" id="goodEye">👁️ Good Eye: 0</div>
+            </div>
         </div>
 
         <div id="flashOverlay"></div>
 
+        <div id="levelComplete">
+            <h1>Level Complete! 🎉</h1>
+            <div id="levelStats"></div>
+            <button id="nextLevelBtn">Next Level</button>
+        </div>
+
         <div id="gameOver">
             <h1>Game Over!</h1>
-            <p id="finalScore">Final Score: 0</p>
+            <div id="finalStats"></div>
             <button id="restartBtn">Play Again</button>
         </div>
     </div>
@@ -229,9 +288,15 @@
         const flashOverlay = document.getElementById('flashOverlay');
         const scoreEl = document.getElementById('score');
         const livesEl = document.getElementById('lives');
+        const levelEl = document.getElementById('level');
+        const streakEl = document.getElementById('streak');
+        const goodEyeEl = document.getElementById('goodEye');
         const gameOverEl = document.getElementById('gameOver');
-        const finalScoreEl = document.getElementById('finalScore');
+        const levelCompleteEl = document.getElementById('levelComplete');
+        const finalStatsEl = document.getElementById('finalStats');
+        const levelStatsEl = document.getElementById('levelStats');
         const restartBtn = document.getElementById('restartBtn');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
         const startScreen = document.getElementById('startScreen');
         const startBtn = document.getElementById('startBtn');
 
@@ -247,29 +312,50 @@
         let gameRunning = false;
         let score = 0;
         let lives = 5;
+        let currentLevel = 1;
+        let streak = 0;
+        let maxStreak = 0;
+        let goodEyeCount = 0;
+        let totalBombsAvoided = 0;
+        let balloonsPopped = 0;
+        let balloonsMissed = 0;
         let balloons = [];
         let particles = [];
         let lastBalloonTime = 0;
-        let balloonInterval = 1000; // Start spawning every second
+        let balloonInterval = 1000;
+
+        // Level configuration
+        const levels = [
+            { number: 1, target: 20, bombChance: 0.15, bonusChance: 0.1, maxInterval: 800, minInterval: 500, speedMultiplier: 1 },
+            { number: 2, target: 30, bombChance: 0.20, bonusChance: 0.12, maxInterval: 700, minInterval: 400, speedMultiplier: 1.2 },
+            { number: 3, target: 40, bombChance: 0.25, bonusChance: 0.15, maxInterval: 600, minInterval: 350, speedMultiplier: 1.4 },
+            { number: 4, target: 50, bombChance: 0.30, bonusChance: 0.18, maxInterval: 500, minInterval: 300, speedMultiplier: 1.6 },
+            { number: 5, target: 60, bombChance: 0.35, bonusChance: 0.20, maxInterval: 450, minInterval: 250, speedMultiplier: 1.8 }
+        ];
 
         // Balloon colors
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e'];
 
         // Balloon class
         class Balloon {
-            constructor() {
+            constructor(levelConfig) {
                 this.radius = 30 + Math.random() * 20;
                 this.x = this.radius + Math.random() * (canvas.width - this.radius * 2);
                 this.y = canvas.height + this.radius;
-                this.speed = 1 + Math.random() * 2;
+                this.speed = (1 + Math.random() * 2) * levelConfig.speedMultiplier;
                 this.color = colors[Math.floor(Math.random() * colors.length)];
                 this.swayOffset = Math.random() * Math.PI * 2;
                 this.swaySpeed = 0.02 + Math.random() * 0.02;
                 this.popped = false;
-                // 25% chance of having a bomb
-                this.hasBomb = Math.random() < 0.25;
-                if (this.hasBomb) {
-                    this.color = '#2d3436'; // Dark color for bomb balloons
+
+                // Determine balloon type - bomb, bonus, or normal
+                const rand = Math.random();
+                this.hasBomb = rand < levelConfig.bombChance;
+                this.isBonus = !this.hasBomb && rand < (levelConfig.bombChance + levelConfig.bonusChance);
+
+                // Bonus balloons are golden/yellow
+                if (this.isBonus) {
+                    this.color = '#FFD700';
                 }
             }
 
@@ -334,6 +420,18 @@
                     ctx.fillStyle = '#ffed00';
                     ctx.arc(this.x - 5, bombY - 20, 2, 0, Math.PI * 2);
                     ctx.fill();
+                }
+
+                // Draw star for bonus balloons
+                if (this.isBonus) {
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold ' + (this.radius * 0.8) + 'px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⭐', 0, 0);
+                    ctx.restore();
                 }
             }
 
@@ -437,25 +535,45 @@
                         flashScreen();
                         balloons.splice(i, 1);
 
-                        // Lose a life
+                        // Lose a life and reset streak
                         lives--;
                         livesEl.textContent = `❤️ ${lives}`;
+                        streak = 0;
+                        updateStreak();
 
                         if (lives <= 0) {
                             endGame();
                         }
+                    } else if (balloons[i].isBonus) {
+                        // Bonus balloon!
+                        createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
+                        balloons.splice(i, 1);
+                        score += 50;
+                        balloonsPopped++;
+                        streak++;
+                        updateScore();
+                        updateStreak();
+
+                        // Extra visual feedback
+                        canvas.style.transform = 'scale(1.05)';
+                        setTimeout(() => canvas.style.transform = 'scale(1)', 150);
                     } else {
                         // Normal balloon pop
                         createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
                         balloons.splice(i, 1);
                         score += 10;
-                        scoreEl.textContent = `Score: ${score}`;
+                        balloonsPopped++;
+                        streak++;
+                        updateScore();
+                        updateStreak();
 
-                        // Play pop sound (visual feedback)
+                        // Visual feedback
                         canvas.style.transform = 'scale(0.98)';
                         setTimeout(() => canvas.style.transform = 'scale(1)', 100);
                     }
 
+                    // Check level completion
+                    checkLevelComplete();
                     break;
                 }
             }
@@ -474,13 +592,16 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (gameRunning) {
+                const levelConfig = levels[currentLevel - 1];
+
                 // Spawn balloons
                 if (timestamp - lastBalloonTime > balloonInterval) {
-                    balloons.push(new Balloon());
+                    balloons.push(new Balloon(levelConfig));
                     lastBalloonTime = timestamp;
 
-                    // Gradually increase difficulty
-                    balloonInterval = Math.max(400, 1000 - score * 2);
+                    // Adjust spawn rate based on level and score
+                    const progress = balloonsPopped / levelConfig.target;
+                    balloonInterval = levelConfig.maxInterval - (levelConfig.maxInterval - levelConfig.minInterval) * progress;
                 }
 
                 // Update and draw balloons
@@ -490,12 +611,32 @@
 
                     // Check if balloon escaped
                     if (balloons[i].isOffScreen()) {
+                        const escapedBalloon = balloons[i];
                         balloons.splice(i, 1);
-                        lives--;
-                        livesEl.textContent = `❤️ ${lives}`;
 
-                        if (lives <= 0) {
-                            endGame();
+                        if (escapedBalloon.hasBomb) {
+                            // Good! Let the bomb go - track it
+                            totalBombsAvoided++;
+                            goodEyeCount++;
+                            updateGoodEye();
+
+                            // Award for avoiding bombs
+                            if (goodEyeCount > 0 && goodEyeCount % 5 === 0) {
+                                score += 25;
+                                updateScore();
+                                showAchievement('👁️ Good Eye! +25');
+                            }
+                        } else {
+                            // Lost a normal or bonus balloon
+                            balloonsMissed++;
+                            lives--;
+                            streak = 0;
+                            livesEl.textContent = `❤️ ${lives}`;
+                            updateStreak();
+
+                            if (lives <= 0) {
+                                endGame();
+                            }
                         }
                     }
                 }
@@ -514,32 +655,152 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Start game
-        function startGame() {
+        // UI update functions
+        function updateScore() {
+            scoreEl.textContent = `Score: ${score}`;
+        }
+
+        function updateStreak() {
+            if (streak > maxStreak) maxStreak = streak;
+            streakEl.textContent = `🔥 Streak: ${streak}`;
+
+            // Highlight on streak milestones
+            if (streak > 0 && streak % 10 === 0) {
+                streakEl.classList.add('highlight');
+                setTimeout(() => streakEl.classList.remove('highlight'), 500);
+                score += 20;
+                updateScore();
+                showAchievement(`🔥 ${streak} Streak! +20`);
+            }
+        }
+
+        function updateGoodEye() {
+            goodEyeEl.textContent = `👁️ Good Eye: ${goodEyeCount}`;
+            goodEyeEl.classList.add('highlight');
+            setTimeout(() => goodEyeEl.classList.remove('highlight'), 500);
+        }
+
+        // Show achievement notification
+        function showAchievement(text) {
+            const achievement = document.createElement('div');
+            achievement.className = 'achievement';
+            achievement.textContent = text;
+            achievement.style.position = 'absolute';
+            achievement.style.top = '50%';
+            achievement.style.left = '50%';
+            achievement.style.transform = 'translate(-50%, -50%)';
+            achievement.style.zIndex = '15';
+            achievement.style.animation = 'pulse 0.5s';
+            gameContainer.appendChild(achievement);
+            setTimeout(() => achievement.remove(), 2000);
+        }
+
+        // Check level completion
+        function checkLevelComplete() {
+            const levelConfig = levels[currentLevel - 1];
+            if (balloonsPopped >= levelConfig.target) {
+                completeLevel();
+            }
+        }
+
+        // Complete level
+        function completeLevel() {
+            gameRunning = false;
+
+            // Calculate stats
+            const levelConfig = levels[currentLevel - 1];
+            let achievements = [];
+
+            if (maxStreak >= 15) achievements.push('🔥 Hot Streak! (15+ combo)');
+            if (goodEyeCount >= 10) achievements.push('👁️ Eagle Eye! (10+ bombs avoided)');
+            if (lives === 5) achievements.push('💯 Perfect Health!');
+
+            levelStatsEl.innerHTML = `
+                <p>Level ${currentLevel} Complete!</p>
+                <p>Balloons Popped: ${balloonsPopped}</p>
+                <p>Max Streak: ${maxStreak}</p>
+                <p>Bombs Avoided: ${goodEyeCount}</p>
+                <p>Score: ${score}</p>
+                ${achievements.length > 0 ? '<div class="achievement">' + achievements.join('<br>') + '</div>' : ''}
+            `;
+
+            if (currentLevel < 5) {
+                levelCompleteEl.style.display = 'block';
+            } else {
+                // Game won!
+                endGame(true);
+            }
+        }
+
+        // Start next level
+        function startNextLevel() {
+            currentLevel++;
+            levelCompleteEl.style.display = 'none';
+            startLevel();
+        }
+
+        // Start/restart a level
+        function startLevel() {
             gameRunning = true;
-            score = 0;
-            lives = 5;
+            balloonsPopped = 0;
+            goodEyeCount = 0;
+            streak = 0;
+            maxStreak = 0;
             balloons = [];
             particles = [];
-            balloonInterval = 1000;
+
+            const levelConfig = levels[currentLevel - 1];
+            balloonInterval = levelConfig.maxInterval;
             lastBalloonTime = performance.now();
 
-            scoreEl.textContent = 'Score: 0';
+            levelEl.textContent = `Level: ${currentLevel}`;
+            updateScore();
+            updateStreak();
+            goodEyeEl.textContent = `👁️ Good Eye: 0`;
+        }
+
+        // Start game
+        function startGame() {
+            currentLevel = 1;
+            score = 0;
+            lives = 5;
+            totalBombsAvoided = 0;
+            balloonsMissed = 0;
+
             livesEl.textContent = '❤️ 5';
             gameOverEl.style.display = 'none';
             startScreen.style.display = 'none';
+
+            startLevel();
         }
 
         // End game
-        function endGame() {
+        function endGame(won = false) {
             gameRunning = false;
-            finalScoreEl.textContent = `Final Score: ${score}`;
+
+            let achievements = [];
+            if (won) achievements.push('🏆 CHAMPION! You beat all 5 levels!');
+            if (totalBombsAvoided >= 25) achievements.push('👁️ Master of Awareness!');
+            if (score >= 1000) achievements.push('💰 High Roller!');
+
+            finalStatsEl.innerHTML = `
+                <h2>${won ? '🏆 VICTORY! 🏆' : 'Game Over'}</h2>
+                <p><strong>Final Score: ${score}</strong></p>
+                <p>Level Reached: ${currentLevel}</p>
+                <p>Total Balloons Popped: ${balloonsPopped}</p>
+                <p>Bombs Avoided: ${totalBombsAvoided}</p>
+                <p>Max Streak: ${maxStreak}</p>
+                ${achievements.length > 0 ? '<div class="achievement">' + achievements.join('<br>') + '</div>' : ''}
+            `;
+
+            levelCompleteEl.style.display = 'none';
             gameOverEl.style.display = 'block';
         }
 
         // Event listeners
         startBtn.addEventListener('click', startGame);
         restartBtn.addEventListener('click', startGame);
+        nextLevelBtn.addEventListener('click', startNextLevel);
 
         // Start game loop
         requestAnimationFrame(gameLoop);
