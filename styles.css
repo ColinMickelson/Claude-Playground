@@ -1,0 +1,758 @@
+/* ============================================
+   BALLOON POP - FULLY RESPONSIVE STYLES
+   ============================================ */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-primary: #ff6b6b;
+    --color-primary-dark: #ee5a5a;
+    --color-secondary: #4ecdc4;
+    --color-accent: #ffe66d;
+    --color-dark: #2c3e50;
+    --color-light: #f8f9fa;
+    --color-overlay: rgba(0, 0, 0, 0.6);
+    --modal-bg: #ffffff;
+    --modal-radius: 1rem;
+    --modal-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.3);
+    --btn-radius: 0.625rem;
+    --hud-height: 3.5rem;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #1a1a2e;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* ============================================
+   GAME CONTAINER & CANVAS
+   ============================================ */
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ============================================
+   HUD
+   ============================================ */
+
+#hud {
+    position: absolute;
+    top: var(--safe-area-top);
+    left: 0;
+    right: 0;
+    height: var(--hud-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.75rem;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    color: white;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-left, .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hud-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+}
+
+.hud-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+#pause-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background 0.2s;
+}
+
+#pause-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* ============================================
+   MODAL OVERLAY - RESPONSIVE FOUNDATION
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-overlay);
+    z-index: 100;
+    padding: 1rem;
+    padding-top: calc(1rem + var(--safe-area-top));
+    padding-bottom: calc(1rem + var(--safe-area-bottom));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* ============================================
+   MODAL DIALOG - RESPONSIVE CORE
+   Key approach:
+   - Use max-height with overflow-y auto for scroll
+   - Constrain width with min/max
+   - Flexbox column layout inside
+   ============================================ */
+
+.modal-dialog {
+    background: var(--modal-bg);
+    border-radius: var(--modal-radius);
+    box-shadow: var(--modal-shadow);
+    width: 100%;
+    max-width: 26rem;
+    max-height: calc(100vh - 2rem - var(--safe-area-top) - var(--safe-area-bottom));
+    max-height: calc(100dvh - 2rem - var(--safe-area-top) - var(--safe-area-bottom));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalSlideIn 0.35s ease-out;
+    transform-origin: center center;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(1rem);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Scroll wrapper inside modal for content overflow */
+.modal-scroll-wrapper {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.75rem 1.5rem;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+/* Subtle scrollbar for when content overflows */
+.modal-scroll-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 2px;
+}
+
+/* ============================================
+   MODAL TYPOGRAPHY
+   ============================================ */
+
+.modal-title {
+    text-align: center;
+    color: var(--color-dark);
+    margin-bottom: 0.75rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.game-title {
+    font-size: clamp(1.75rem, 6vw, 2.75rem);
+    background: linear-gradient(135deg, var(--color-primary), #ff8e53, var(--color-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.game-over-title {
+    color: var(--color-primary);
+}
+
+.modal-text {
+    text-align: center;
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.modal-footnote {
+    text-align: center;
+    color: #999;
+    font-size: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* ============================================
+   START SCREEN SPECIFICS
+   ============================================ */
+
+.balloon-decoration {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.75rem;
+}
+
+.deco-balloon {
+    display: inline-block;
+    filter: hue-rotate(calc(var(--hue) * 1deg));
+    animation: floatBalloon 2s ease-in-out infinite;
+}
+
+.deco-balloon:nth-child(2) { animation-delay: 0.3s; }
+.deco-balloon:nth-child(3) { animation-delay: 0.6s; }
+.deco-balloon:nth-child(4) { animation-delay: 0.9s; }
+.deco-balloon:nth-child(5) { animation-delay: 1.2s; }
+
+@keyframes floatBalloon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-0.5rem); }
+}
+
+.instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+}
+
+.instruction-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.875rem;
+    color: #444;
+}
+
+.instruction-icon {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    width: 2rem;
+    text-align: center;
+}
+
+/* ============================================
+   STAT ROWS (Pause, Level Complete, Game Over)
+   ============================================ */
+
+.pause-stats,
+.level-stats,
+.game-over-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 1rem 0;
+    border-radius: 0.625rem;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.875rem;
+    background: #f8f9fa;
+}
+
+.stat-row:nth-child(even) {
+    background: #fff;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.stat-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+.bonus-row .stat-value {
+    color: var(--color-secondary);
+}
+
+/* ============================================
+   STARS (Level Complete)
+   ============================================ */
+
+.stars-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+.star {
+    font-size: 2.25rem;
+    color: #ddd;
+    transition: color 0.3s, transform 0.3s;
+}
+
+.star.earned {
+    color: var(--color-accent);
+    animation: starPop 0.4s ease-out;
+}
+
+.star.earned:nth-child(2) { animation-delay: 0.15s; }
+.star.earned:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes starPop {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+/* ============================================
+   NEXT LEVEL TEXT
+   ============================================ */
+
+.next-level-text {
+    text-align: center;
+    color: #777;
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+}
+
+#lc-next-name {
+    font-weight: 700;
+    color: var(--color-secondary);
+}
+
+/* ============================================
+   FINAL SCORE (Game Over)
+   ============================================ */
+
+.final-score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.final-score-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+}
+
+.final-score-number {
+    font-size: clamp(2.5rem, 10vw, 3.5rem);
+    font-weight: 900;
+    color: var(--color-dark);
+    line-height: 1.1;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: var(--btn-radius);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), #ff8e53);
+    color: white;
+    box-shadow: 0 0.25rem 1rem rgba(255, 107, 107, 0.35);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0.35rem 1.25rem rgba(255, 107, 107, 0.5);
+}
+
+.btn-secondary {
+    background: #eee;
+    color: #555;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    border-radius: 0.75rem;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Very short screens (landscape phones, small devices) */
+@media (max-height: 480px) {
+    .modal-dialog {
+        max-height: calc(100vh - 1rem);
+        max-height: calc(100dvh - 1rem);
+        border-radius: 0.75rem;
+    }
+
+    .modal-scroll-wrapper {
+        padding: 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.35rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .game-title {
+        font-size: 1.5rem;
+    }
+
+    .balloon-decoration {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        gap: 0.25rem;
+    }
+
+    .instructions {
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .instruction-row {
+        font-size: 0.8rem;
+    }
+
+    .instruction-icon {
+        font-size: 1rem;
+        width: 1.5rem;
+    }
+
+    .stars-container {
+        margin: 0.5rem 0;
+    }
+
+    .star {
+        font-size: 1.75rem;
+    }
+
+    .stat-row {
+        padding: 0.45rem 0.75rem;
+    }
+
+    .stat-label {
+        font-size: 0.78rem;
+    }
+
+    .stat-value {
+        font-size: 0.85rem;
+    }
+
+    .final-score-number {
+        font-size: 2.25rem;
+    }
+
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .btn-large {
+        padding: 0.7rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .modal-text {
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .modal-footnote {
+        margin-top: 0.5rem;
+    }
+
+    .modal-actions {
+        gap: 0.4rem;
+    }
+
+    .pause-stats,
+    .level-stats,
+    .game-over-stats {
+        margin: 0.5rem 0;
+    }
+
+    .final-score-display {
+        margin: 0.5rem 0;
+    }
+
+    .next-level-text {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+    }
+}
+
+/* Small width screens (narrow phones) */
+@media (max-width: 360px) {
+    .modal-overlay {
+        padding: 0.5rem;
+    }
+
+    .modal-scroll-wrapper {
+        padding: 1.25rem 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.4rem;
+    }
+
+    .hud-label {
+        font-size: 0.5rem;
+    }
+
+    .hud-value {
+        font-size: 0.95rem;
+    }
+
+    .hud-left, .hud-right {
+        gap: 0.5rem;
+    }
+}
+
+/* Landscape + short: most constrained scenario */
+@media (max-height: 380px) and (orientation: landscape) {
+    .modal-overlay {
+        padding: 0.375rem;
+        padding-top: calc(0.375rem + var(--safe-area-top));
+        padding-bottom: calc(0.375rem + var(--safe-area-bottom));
+    }
+
+    .modal-dialog {
+        max-width: 32rem;
+        max-height: calc(100vh - 0.75rem);
+        max-height: calc(100dvh - 0.75rem);
+        flex-direction: column;
+    }
+
+    .modal-scroll-wrapper {
+        padding: 0.75rem 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .game-title {
+        font-size: 1.35rem;
+    }
+
+    .balloon-decoration {
+        display: none;
+    }
+
+    .instructions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .instruction-row {
+        font-size: 0.75rem;
+    }
+
+    .modal-actions {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .btn-large {
+        padding: 0.6rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .stat-row {
+        padding: 0.35rem 0.65rem;
+    }
+
+    .star {
+        font-size: 1.5rem;
+    }
+
+    .final-score-number {
+        font-size: 2rem;
+    }
+
+    .modal-text {
+        font-size: 0.78rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .modal-footnote {
+        display: none;
+    }
+}
+
+/* Tablet and larger */
+@media (min-width: 768px) and (min-height: 600px) {
+    .modal-dialog {
+        max-width: 28rem;
+    }
+
+    .modal-scroll-wrapper {
+        padding: 2rem 2rem;
+    }
+
+    .modal-title {
+        font-size: 2rem;
+    }
+
+    .btn-large {
+        padding: 1.1rem 2.5rem;
+        font-size: 1.3rem;
+    }
+
+    .star {
+        font-size: 2.75rem;
+    }
+
+    #hud {
+        padding: 0 1.5rem;
+    }
+
+    .hud-value {
+        font-size: 1.25rem;
+    }
+}
+
+/* ============================================
+   POP EFFECT
+   ============================================ */
+
+.pop-effect {
+    position: absolute;
+    pointer-events: none;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-accent);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    animation: popScore 0.8s ease-out forwards;
+    z-index: 50;
+}
+
+@keyframes popScore {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-2.5rem) scale(1.3);
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY & REDUCED MOTION
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-dialog {
+        animation: none;
+    }
+
+    .deco-balloon {
+        animation: none;
+    }
+
+    .star.earned {
+        animation: none;
+    }
+
+    .pop-effect {
+        animation: none;
+    }
+}

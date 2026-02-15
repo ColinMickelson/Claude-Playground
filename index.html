@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Balloon Pop!</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+
+        <div id="hud">
+            <div class="hud-left">
+                <div class="hud-item">
+                    <span class="hud-label">Score</span>
+                    <span id="hud-score" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Level</span>
+                    <span id="hud-level" class="hud-value">1</span>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div class="hud-item">
+                    <span class="hud-label">Lives</span>
+                    <span id="hud-lives" class="hud-value">3</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">Target</span>
+                    <span id="hud-target" class="hud-value">0/10</span>
+                </div>
+                <button id="pause-btn" aria-label="Pause game">&#10074;&#10074;</button>
+            </div>
+        </div>
+
+        <!-- Start Screen Modal -->
+        <div id="modal-start" class="modal-overlay active">
+            <div class="modal-dialog start-dialog">
+                <div class="modal-scroll-wrapper">
+                    <h1 class="modal-title game-title">Balloon Pop!</h1>
+                    <div class="balloon-decoration">
+                        <span class="deco-balloon" style="--hue: 0">&#127880;</span>
+                        <span class="deco-balloon" style="--hue: 60">&#127880;</span>
+                        <span class="deco-balloon" style="--hue: 120">&#127880;</span>
+                        <span class="deco-balloon" style="--hue: 200">&#127880;</span>
+                        <span class="deco-balloon" style="--hue: 280">&#127880;</span>
+                    </div>
+                    <p class="modal-text">Pop the balloons before they escape! Tap or click to pop them.</p>
+                    <div class="instructions">
+                        <div class="instruction-row">
+                            <span class="instruction-icon">&#127880;</span>
+                            <span>Pop balloons to score points</span>
+                        </div>
+                        <div class="instruction-row">
+                            <span class="instruction-icon">&#9888;&#65039;</span>
+                            <span>Don't let them float away — you'll lose lives!</span>
+                        </div>
+                        <div class="instruction-row">
+                            <span class="instruction-icon">&#11088;</span>
+                            <span>Reach the target to advance levels</span>
+                        </div>
+                        <div class="instruction-row">
+                            <span class="instruction-icon">&#9889;</span>
+                            <span>Watch for special golden balloons!</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-primary btn-large" id="btn-start">Play!</button>
+                    </div>
+                    <p class="modal-footnote">Best on mobile &amp; desktop</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Modal -->
+        <div id="modal-pause" class="modal-overlay">
+            <div class="modal-dialog pause-dialog">
+                <div class="modal-scroll-wrapper">
+                    <h2 class="modal-title">Paused</h2>
+                    <div class="pause-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Score</span>
+                            <span id="pause-score" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Level</span>
+                            <span id="pause-level" class="stat-value">1</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Lives</span>
+                            <span id="pause-lives" class="stat-value">3</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Balloons Popped</span>
+                            <span id="pause-popped" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" id="btn-resume">Resume</button>
+                        <button class="btn btn-secondary" id="btn-restart-pause">Restart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Complete Modal -->
+        <div id="modal-level-complete" class="modal-overlay">
+            <div class="modal-dialog level-complete-dialog">
+                <div class="modal-scroll-wrapper">
+                    <h2 class="modal-title">Level Complete!</h2>
+                    <div class="stars-container" id="stars-container">
+                        <span class="star earned">&#9733;</span>
+                        <span class="star earned">&#9733;</span>
+                        <span class="star">&#9733;</span>
+                    </div>
+                    <div class="level-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Balloons Popped</span>
+                            <span id="lc-popped" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Accuracy</span>
+                            <span id="lc-accuracy" class="stat-value">0%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Level Score</span>
+                            <span id="lc-score" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row bonus-row">
+                            <span class="stat-label">Bonus</span>
+                            <span id="lc-bonus" class="stat-value">+0</span>
+                        </div>
+                    </div>
+                    <p class="next-level-text">Next: <span id="lc-next-name">Level 2</span></p>
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" id="btn-next-level">Next Level</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="modal-game-over" class="modal-overlay">
+            <div class="modal-dialog game-over-dialog">
+                <div class="modal-scroll-wrapper">
+                    <h2 class="modal-title game-over-title">Game Over</h2>
+                    <div class="final-score-display">
+                        <span class="final-score-label">Final Score</span>
+                        <span id="go-final-score" class="final-score-number">0</span>
+                    </div>
+                    <div class="game-over-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Level Reached</span>
+                            <span id="go-level" class="stat-value">1</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Total Popped</span>
+                            <span id="go-popped" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Best Combo</span>
+                            <span id="go-combo" class="stat-value">0x</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">High Score</span>
+                            <span id="go-highscore" class="stat-value">0</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" id="btn-play-again">Play Again</button>
+                        <button class="btn btn-secondary" id="btn-main-menu">Main Menu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
