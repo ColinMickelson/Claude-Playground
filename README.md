@@ -1,2 +1,2 @@
 # Claude-Playground
-Sandbox repo for Claude code experimentations
+Sandbox repo for Claude code experiments
