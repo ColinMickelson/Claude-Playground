@@ -242,6 +242,191 @@
             pointer-events: none;
             z-index: 15;
         }
+
+        /* Floating score text */
+        .floating-score {
+            position: absolute;
+            font-size: 32px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 16;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+
+        /* Progress bar */
+        #progressContainer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #progressBar {
+            height: 100%;
+            background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        #progressBar.near-complete {
+            animation: progressPulse 0.5s infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        #progressText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 1;
+        }
+
+        /* Sound toggle button */
+        #soundToggle {
+            position: absolute;
+            top: 70px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            color: white;
+            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        #soundToggle:active {
+            transform: scale(0.9);
+        }
+
+        #soundToggle.muted {
+            opacity: 0.5;
+        }
+
+        /* High scores display */
+        #highScores {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            max-width: 300px;
+        }
+
+        #highScores h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        #highScores ol {
+            list-style-position: inside;
+            padding: 0;
+            margin: 0;
+        }
+
+        #highScores li {
+            font-size: 16px;
+            padding: 5px 0;
+            color: white;
+        }
+
+        .new-high-score {
+            animation: celebrateScore 1s;
+        }
+
+        @keyframes celebrateScore {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        /* Pause button and overlay */
+        #pauseBtn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            color: white;
+            font-size: 28px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        #pauseBtn:active {
+            transform: scale(0.9);
+        }
+
+        #pauseOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 35;
+            backdrop-filter: blur(5px);
+        }
+
+        #pauseMenu {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        #pauseMenu h2 {
+            font-size: 48px;
+            margin-bottom: 30px;
+        }
+
+        #pauseMenu button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        #pauseMenu button:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -249,6 +434,10 @@
         <div id="startScreen">
             <h1>🎈 Balloon Pop 🎈</h1>
             <p>Pop balloons before they escape!<br>⚠️ AVOID bomb balloons! 💣<br>⭐ Collect bonus stars! ⭐<br>Progress through 5 levels!</p>
+            <div id="highScores" style="display: none;">
+                <h3>🏆 High Scores</h3>
+                <ol id="highScoresList"></ol>
+            </div>
             <button id="startBtn">Start Game</button>
         </div>
 
@@ -263,6 +452,22 @@
             <div id="statsBar">
                 <div class="stat" id="streak">🔥 Streak: 0</div>
                 <div class="stat" id="goodEye">👁️ Good Eye: 0</div>
+            </div>
+        </div>
+
+        <button id="soundToggle">🔊</button>
+        <button id="pauseBtn" style="display: none;">⏸️</button>
+
+        <div id="progressContainer">
+            <div id="progressText">0/20</div>
+            <div id="progressBar"></div>
+        </div>
+
+        <div id="pauseOverlay">
+            <div id="pauseMenu">
+                <h2>⏸️ PAUSED</h2>
+                <button id="resumeBtn">Resume</button>
+                <button id="quitBtn">Quit to Menu</button>
             </div>
         </div>
 
@@ -299,6 +504,15 @@
         const nextLevelBtn = document.getElementById('nextLevelBtn');
         const startScreen = document.getElementById('startScreen');
         const startBtn = document.getElementById('startBtn');
+        const soundToggle = document.getElementById('soundToggle');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const quitBtn = document.getElementById('quitBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const highScoresEl = document.getElementById('highScores');
+        const highScoresListEl = document.getElementById('highScoresList');
 
         // Set canvas size
         function resizeCanvas() {
@@ -308,8 +522,101 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
+        // Web Audio API Sound System
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let soundEnabled = true;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+
+            const now = audioCtx.currentTime;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            switch(type) {
+                case 'pop':
+                    oscillator.frequency.setValueAtTime(400, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.1);
+                    break;
+
+                case 'bonus':
+                    oscillator.frequency.setValueAtTime(600, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(900, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.15);
+                    break;
+
+                case 'explosion':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+                    gainNode.gain.setValueAtTime(0.5, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.3);
+                    break;
+
+                case 'streak':
+                    [0, 0.05, 0.1].forEach((delay, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.setValueAtTime(400 + i * 200, now + delay);
+                        gain.gain.setValueAtTime(0.2, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.1);
+                        osc.start(now + delay);
+                        osc.stop(now + delay + 0.1);
+                    });
+                    break;
+
+                case 'goodEye':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(300, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(500, now + 0.2);
+                    gainNode.gain.setValueAtTime(0.15, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+                    break;
+
+                case 'levelComplete':
+                    [0, 0.1, 0.2, 0.3].forEach((delay, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.setValueAtTime(400 + i * 100, now + delay);
+                        gain.gain.setValueAtTime(0.25, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.2);
+                        osc.start(now + delay);
+                        osc.stop(now + delay + 0.2);
+                    });
+                    break;
+            }
+        }
+
+        // Sound toggle
+        soundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundToggle.textContent = soundEnabled ? '🔊' : '🔇';
+            soundToggle.classList.toggle('muted', !soundEnabled);
+            if (soundEnabled) playSound('pop');
+        });
+
         // Game state
         let gameRunning = false;
+        let gamePaused = false;
         let score = 0;
         let lives = 5;
         let currentLevel = 1;
@@ -323,6 +630,7 @@
         let particles = [];
         let lastBalloonTime = 0;
         let balloonInterval = 1000;
+        let pauseStartTime = 0;
 
         // Level configuration
         const levels = [
@@ -335,6 +643,108 @@
 
         // Balloon colors
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e'];
+
+        // Floating score text
+        function showFloatingScore(x, y, points, color = '#FFD700') {
+            const floatText = document.createElement('div');
+            floatText.className = 'floating-score';
+            floatText.textContent = `+${points}`;
+            floatText.style.left = `${x}px`;
+            floatText.style.top = `${y}px`;
+            floatText.style.color = color;
+            gameContainer.appendChild(floatText);
+            setTimeout(() => floatText.remove(), 1000);
+        }
+
+        // Progress bar updates
+        function updateProgressBar() {
+            const levelConfig = levels[currentLevel - 1];
+            const percentage = (balloonsPopped / levelConfig.target) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `${balloonsPopped}/${levelConfig.target}`;
+
+            if (percentage >= 80) {
+                progressBar.classList.add('near-complete');
+            } else {
+                progressBar.classList.remove('near-complete');
+            }
+        }
+
+        // LocalStorage High Score System
+        function getHighScores() {
+            const scores = localStorage.getItem('balloonPopHighScores');
+            return scores ? JSON.parse(scores) : [];
+        }
+
+        function saveHighScore(score) {
+            let highScores = getHighScores();
+            highScores.push({ score, date: new Date().toLocaleDateString() });
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 5); // Keep top 5
+            localStorage.setItem('balloonPopHighScores', JSON.stringify(highScores));
+            return highScores;
+        }
+
+        function displayHighScores() {
+            const highScores = getHighScores();
+            if (highScores.length > 0) {
+                highScoresEl.style.display = 'block';
+                highScoresListEl.innerHTML = highScores.map(hs =>
+                    `<li>${hs.score} - ${hs.date}</li>`
+                ).join('');
+            }
+        }
+
+        function checkHighScore(finalScore) {
+            const highScores = getHighScores();
+            const isNewHigh = highScores.length < 5 || finalScore > highScores[highScores.length - 1].score;
+
+            if (isNewHigh) {
+                saveHighScore(finalScore);
+                return true;
+            }
+            return false;
+        }
+
+        // Haptic feedback
+        function vibrate(duration = 50) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Pause/Resume functionality
+        function pauseGame() {
+            if (!gameRunning || gamePaused) return;
+            gamePaused = true;
+            pauseStartTime = performance.now();
+            pauseOverlay.style.display = 'flex';
+            playSound('pop');
+        }
+
+        function resumeGame() {
+            if (!gamePaused) return;
+            gamePaused = false;
+            pauseOverlay.style.display = 'none';
+            // Adjust timing to account for pause duration
+            const pauseDuration = performance.now() - pauseStartTime;
+            lastBalloonTime += pauseDuration;
+            playSound('pop');
+        }
+
+        function quitToMenu() {
+            gamePaused = false;
+            gameRunning = false;
+            pauseOverlay.style.display = 'none';
+            pauseBtn.style.display = 'none';
+            startScreen.style.display = 'flex';
+            displayHighScores();
+        }
+
+        // Event listeners for pause
+        pauseBtn.addEventListener('click', pauseGame);
+        resumeBtn.addEventListener('click', resumeGame);
+        quitBtn.addEventListener('click', quitToMenu);
 
         // Balloon class
         class Balloon {
@@ -388,38 +798,61 @@
 
                 // Draw bomb if this balloon has one
                 if (this.hasBomb) {
-                    const bombY = this.y + this.radius + 20;
+                    const bombY = this.y + this.radius + 25;
 
-                    // Bomb body
+                    // Warning glow (pulsing)
+                    const glowSize = 25 + Math.sin(Date.now() / 200) * 5;
+                    ctx.save();
+                    ctx.globalAlpha = 0.3;
+                    const gradient = ctx.createRadialGradient(this.x, bombY, 0, this.x, bombY, glowSize);
+                    gradient.addColorStop(0, '#ff0000');
+                    gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, bombY, glowSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+
+                    // Bomb body (larger)
                     ctx.beginPath();
                     ctx.fillStyle = '#000';
-                    ctx.arc(this.x, bombY, 12, 0, Math.PI * 2);
+                    ctx.arc(this.x, bombY, 16, 0, Math.PI * 2);
                     ctx.fill();
 
                     // Bomb highlight
                     ctx.beginPath();
                     ctx.fillStyle = '#555';
-                    ctx.arc(this.x - 4, bombY - 4, 4, 0, Math.PI * 2);
+                    ctx.arc(this.x - 5, bombY - 5, 6, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Fuse
+                    // Fuse (thicker)
                     ctx.beginPath();
                     ctx.strokeStyle = '#8B4513';
-                    ctx.lineWidth = 3;
-                    ctx.moveTo(this.x, bombY - 12);
-                    ctx.lineTo(this.x - 5, bombY - 20);
+                    ctx.lineWidth = 4;
+                    ctx.moveTo(this.x, bombY - 16);
+                    ctx.lineTo(this.x - 7, bombY - 28);
                     ctx.stroke();
 
-                    // Spark/flame at fuse tip
+                    // Spark/flame at fuse tip (animated)
+                    const sparkSize = 4 + Math.sin(Date.now() / 100) * 2;
                     ctx.beginPath();
                     ctx.fillStyle = '#ff6b00';
-                    ctx.arc(this.x - 5, bombY - 20, 3, 0, Math.PI * 2);
+                    ctx.arc(this.x - 7, bombY - 28, sparkSize, 0, Math.PI * 2);
                     ctx.fill();
 
                     ctx.beginPath();
                     ctx.fillStyle = '#ffed00';
-                    ctx.arc(this.x - 5, bombY - 20, 2, 0, Math.PI * 2);
+                    ctx.arc(this.x - 7, bombY - 28, sparkSize - 2, 0, Math.PI * 2);
                     ctx.fill();
+
+                    // Skull warning icon
+                    ctx.save();
+                    ctx.font = 'bold 18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText('💀', this.x, bombY);
+                    ctx.restore();
                 }
 
                 // Draw star for bonus balloons
@@ -519,7 +952,7 @@
 
         // Handle touch/click
         function handlePointerDown(e) {
-            if (!gameRunning) return;
+            if (!gameRunning || gamePaused) return;
 
             const rect = canvas.getBoundingClientRect();
             const x = (e.clientX || e.touches[0].clientX) - rect.left;
@@ -528,11 +961,17 @@
             // Check if any balloon was tapped
             for (let i = balloons.length - 1; i >= 0; i--) {
                 if (balloons[i].contains(x, y)) {
-                    if (balloons[i].hasBomb) {
+                    const balloon = balloons[i];
+                    const screenX = rect.left + balloon.x;
+                    const screenY = rect.top + balloon.y;
+
+                    if (balloon.hasBomb) {
                         // BOOM! Clicked a bomb balloon
-                        createExplosionEffect(balloons[i].x, balloons[i].y);
+                        createExplosionEffect(balloon.x, balloon.y);
                         shakeScreen();
                         flashScreen();
+                        playSound('explosion');
+                        vibrate(200);
                         balloons.splice(i, 1);
 
                         // Lose a life and reset streak
@@ -544,28 +983,36 @@
                         if (lives <= 0) {
                             endGame();
                         }
-                    } else if (balloons[i].isBonus) {
+                    } else if (balloon.isBonus) {
                         // Bonus balloon!
-                        createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
+                        createPopEffect(balloon.x, balloon.y, balloon.color);
+                        playSound('bonus');
+                        vibrate(75);
+                        showFloatingScore(screenX, screenY, 50, '#FFD700');
                         balloons.splice(i, 1);
                         score += 50;
                         balloonsPopped++;
                         streak++;
                         updateScore();
                         updateStreak();
+                        updateProgressBar();
 
                         // Extra visual feedback
                         canvas.style.transform = 'scale(1.05)';
                         setTimeout(() => canvas.style.transform = 'scale(1)', 150);
                     } else {
                         // Normal balloon pop
-                        createPopEffect(balloons[i].x, balloons[i].y, balloons[i].color);
+                        createPopEffect(balloon.x, balloon.y, balloon.color);
+                        playSound('pop');
+                        vibrate(30);
+                        showFloatingScore(screenX, screenY, 10, '#4ecdc4');
                         balloons.splice(i, 1);
                         score += 10;
                         balloonsPopped++;
                         streak++;
                         updateScore();
                         updateStreak();
+                        updateProgressBar();
 
                         // Visual feedback
                         canvas.style.transform = 'scale(0.98)';
@@ -591,7 +1038,7 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (gameRunning) {
+            if (gameRunning && !gamePaused) {
                 const levelConfig = levels[currentLevel - 1];
 
                 // Spawn balloons
@@ -640,11 +1087,18 @@
                         }
                     }
                 }
+            } else if (gameRunning && gamePaused) {
+                // Still draw balloons when paused but don't update
+                for (let i = 0; i < balloons.length; i++) {
+                    balloons[i].draw();
+                }
             }
 
             // Update and draw particles
             for (let i = particles.length - 1; i >= 0; i--) {
-                particles[i].update();
+                if (!gamePaused) {
+                    particles[i].update();
+                }
                 particles[i].draw();
 
                 if (particles[i].isDead()) {
@@ -671,6 +1125,8 @@
                 score += 20;
                 updateScore();
                 showAchievement(`🔥 ${streak} Streak! +20`);
+                playSound('streak');
+                vibrate(100);
             }
         }
 
@@ -678,6 +1134,7 @@
             goodEyeEl.textContent = `👁️ Good Eye: ${goodEyeCount}`;
             goodEyeEl.classList.add('highlight');
             setTimeout(() => goodEyeEl.classList.remove('highlight'), 500);
+            playSound('goodEye');
         }
 
         // Show achievement notification
@@ -706,6 +1163,8 @@
         // Complete level
         function completeLevel() {
             gameRunning = false;
+            playSound('levelComplete');
+            vibrate([100, 50, 100]);
 
             // Calculate stats
             const levelConfig = levels[currentLevel - 1];
@@ -742,6 +1201,7 @@
         // Start/restart a level
         function startLevel() {
             gameRunning = true;
+            gamePaused = false;
             balloonsPopped = 0;
             goodEyeCount = 0;
             streak = 0;
@@ -757,6 +1217,8 @@
             updateScore();
             updateStreak();
             goodEyeEl.textContent = `👁️ Good Eye: 0`;
+            updateProgressBar();
+            pauseBtn.style.display = 'block';
         }
 
         // Start game
@@ -774,23 +1236,46 @@
             startLevel();
         }
 
+        // Display high scores on start
+        displayHighScores();
+
         // End game
         function endGame(won = false) {
             gameRunning = false;
+            gamePaused = false;
+            pauseBtn.style.display = 'none';
+            pauseOverlay.style.display = 'none';
+
+            // Check for high score
+            const isNewHighScore = checkHighScore(score);
+            if (isNewHighScore) {
+                playSound('levelComplete');
+                vibrate([100, 50, 100, 50, 100]);
+            }
 
             let achievements = [];
             if (won) achievements.push('🏆 CHAMPION! You beat all 5 levels!');
+            if (isNewHighScore) achievements.push('🌟 NEW HIGH SCORE! 🌟');
             if (totalBombsAvoided >= 25) achievements.push('👁️ Master of Awareness!');
             if (score >= 1000) achievements.push('💰 High Roller!');
 
+            // Get updated high scores
+            const highScores = getHighScores();
+            const highScoresHTML = highScores.length > 0 ?
+                `<div id="highScores">
+                    <h3>🏆 High Scores</h3>
+                    <ol>${highScores.map(hs => `<li>${hs.score} - ${hs.date}</li>`).join('')}</ol>
+                </div>` : '';
+
             finalStatsEl.innerHTML = `
                 <h2>${won ? '🏆 VICTORY! 🏆' : 'Game Over'}</h2>
-                <p><strong>Final Score: ${score}</strong></p>
+                <p ${isNewHighScore ? 'class="new-high-score"' : ''}><strong>Final Score: ${score}</strong></p>
                 <p>Level Reached: ${currentLevel}</p>
                 <p>Total Balloons Popped: ${balloonsPopped}</p>
                 <p>Bombs Avoided: ${totalBombsAvoided}</p>
                 <p>Max Streak: ${maxStreak}</p>
                 ${achievements.length > 0 ? '<div class="achievement">' + achievements.join('<br>') + '</div>' : ''}
+                ${highScoresHTML}
             `;
 
             levelCompleteEl.style.display = 'none';
