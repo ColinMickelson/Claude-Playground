@@ -833,6 +833,42 @@ html, body {
     text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
+.pop-effect.powerup-text {
+    color: #fff;
+    font-size: 1rem;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.pop-effect.multi-pop-text {
+    color: #ff6b6b;
+    font-size: 1.3rem;
+}
+
+.pop-effect.boss-hit-text {
+    color: #ff4444;
+    font-size: 1.1rem;
+}
+
+.pop-effect.boss-defeat-text {
+    color: #ffd700;
+    font-size: 1.4rem;
+}
+
+.pop-effect.shield-text {
+    color: #7ec8e3;
+    font-size: 1rem;
+}
+
+.boss-warning {
+    text-align: center;
+    color: #ff0044;
+    font-weight: 800;
+    font-size: 0.82rem;
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 @keyframes popScore {
     0% {
         opacity: 1;
