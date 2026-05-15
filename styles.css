@@ -339,6 +339,10 @@ html, body {
     color: var(--color-secondary);
 }
 
+.water-row .stat-value {
+    color: #3a9bd5;
+}
+
 /* ============================================
    STARS (Level Complete)
    ============================================ */
@@ -821,6 +825,12 @@ html, body {
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     animation: popScore 0.8s ease-out forwards;
     z-index: 50;
+}
+
+.pop-effect.water-bonus {
+    color: #4dc9f6;
+    font-size: 1.1rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
 @keyframes popScore {
